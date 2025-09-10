@@ -1,0 +1,11 @@
+server:
+  port: ${APPLICATION_PORT:8080}
+
+spring:
+  application:
+    name: bank_rest
+  datasource:
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:1111}
+    driver-class-name: ${DB_DRIVER_CLASS:org.postgresql.Driver}
+    url: ${DB_URL:}
