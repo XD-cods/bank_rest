@@ -54,7 +54,7 @@ public class Card {
     private YearMonth expiryDate;
 
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "owner_id")
+    @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
     @Builder.Default
