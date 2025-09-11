@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.31.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+
+    <changeSet id="1757592945415-1" author="Vlad">
+        <createTable tableName="users">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_users"/>
+            </column>
+            <column name="first_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="encrypted_password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="1757592945415-2" author="Vlad">
+        <createTable tableName="cards">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_cards"/>
+            </column>
+            <column name="encrypted_card_number" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="masked_card_number" type="VARCHAR(19)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiry_date" type="VARCHAR(7)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="owner_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="card_status" type="INTEGER" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="balance" type="DECIMAL(15, 2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="1757592945415-3" author="Vlad">
+        <addUniqueConstraint
+                columnNames="email"
+                constraintName="uc_users_email"
+                tableName="users"
+        />
+    </changeSet>
+
+    <changeSet id="1757592945415-4" author="Vlad">
+        <addForeignKeyConstraint
+                baseColumnNames="owner_id"
+                baseTableName="cards"
+                constraintName="FK_CARDS_ON_OWNER"
+                referencedColumnNames="id"
+                referencedTableName="users"
+                onDelete="RESTRICT"
+        />
+    </changeSet>
+
+</databaseChangeLog>
