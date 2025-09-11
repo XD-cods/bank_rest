@@ -2,7 +2,6 @@ package com.example.bankcards.entity;
 
 import com.example.bankcards.utility.converter.CardStatusConverter;
 import com.example.bankcards.utility.converter.YearMonthConverter;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -53,7 +52,7 @@ public class Card {
     @FutureOrPresent(message = "{card.expiry.date.invalid}")
     private YearMonth expiryDate;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
