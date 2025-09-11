@@ -29,5 +29,4 @@ public record CardRequest(
     BigDecimal balance
 
 ) {
-
 }
