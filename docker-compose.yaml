@@ -1,0 +1,35 @@
+services:
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - app
+
+  db:
+    image: postgres
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: postgres
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PASSENGER_DB_USERNAME} -d passenger_db" ]
+      interval: 10s
+      retries: 5
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
