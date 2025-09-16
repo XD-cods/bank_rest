@@ -1,6 +1,5 @@
 package com.example.bankcards.dto.response;
 
-import java.util.List;
 import java.util.UUID;
 
 public record UserResponse(
@@ -9,9 +8,9 @@ public record UserResponse(
 
     String firstName,
 
-    List<UUID> cardIds,
+    String lastName,
 
-    boolean isActive
+    String email
 
 ) {
 }

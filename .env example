@@ -1,5 +1,11 @@
-APPLICATION_PORT=8080
+APPLICATION_PORT=8081
+
+JWT_SECRET_KEY:your-super-secret-jwt-key-at-least-256-bits-long
+JWT_EXPIRATION_TIME_MILLISECOND:86400000
+
+DB_HOST=localhost
+DB_PORT=5433
+DB_NAME=postgres
 DB_USERNAME=postgres
 DB_PASSWORD=1111
 DB_DRIVER_CLASS=org.postgresql.Driver
-DB_URL=jdbc:postgresql://localhost:5432/:postgres

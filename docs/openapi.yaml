@@ -1,0 +1,402 @@
+openapi: 3.0.3
+info:
+  title: Bank Cards Management API
+  description: API для управления банковскими картами и пользователями
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8082
+    description: Development server
+  - url: https://api.bankcards.example.com
+    description: Production server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: "Password123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+      properties:
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          example: "Password123!"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+
+    CardRequest:
+      type: object
+      required:
+        - cardNumber
+        - expiryDate
+        - ownerId
+        - balance
+      properties:
+        cardNumber:
+          type: string
+          pattern: "^[0-9]{4} [0-9]{4} [0-9]{4} [0-9]{4}$"
+          example: "1234 5678 9012 3456"
+        expiryDate:
+          type: string
+          format: date
+          pattern: "^[0-9]{4}-[0-9]{2}$"
+          example: "2025-12"
+        ownerId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        balance:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 1000.00
+
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        maskedCardNumber:
+          type: string
+          example: "**** **** **** 3456"
+        expiryDate:
+          type: string
+          format: date
+          example: "2025-12"
+        ownerId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        cardStatus:
+          type: string
+          enum: [ ACTIVE, BLOCKED, DELETED ]
+          example: "ACTIVE"
+        balance:
+          type: number
+          format: decimal
+          example: 1000.00
+
+    TransferRequest:
+      type: object
+      required:
+        - sourceCardId
+        - targetCardId
+        - amount
+      properties:
+        sourceCardId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        targetCardId:
+          type: string
+          format: uuid
+          example: "223e4567-e89b-12d3-a456-426614174000"
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.1
+          example: 100.00
+        description:
+          type: string
+          example: "Transfer for services"
+
+    PageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { }
+        currentPage:
+          type: integer
+          minimum: 0
+          example: 0
+        totalElements:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 10
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Bad Request"
+        errorDescription:
+          type: string
+          example: "Invalid request parameters"
+        statusCode:
+          type: integer
+          example: 400
+        path:
+          type: string
+          example: "/api/v1/cards"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+security:
+  - BearerAuth: [ ]
+
+paths:
+  /api/v1/public/register:
+    post:
+      tags:
+        - Authentication
+      summary: Регистрация нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь с таким email уже существует
+
+  /api/v1/public/login:
+    get:
+      tags:
+        - Authentication
+      summary: Аутентификация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверные учетные данные
+        '400':
+          description: Неверные данные запроса
+
+  /api/v1/users:
+    get:
+      tags:
+        - Users
+      summary: Получить список всех пользователей (только для ADMIN)
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: currentPage
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+        '403':
+          description: Доступ запрещен
+        '401':
+          description: Не авторизован
+
+    post:
+      tags:
+        - Users
+      summary: Создать нового пользователя (только для ADMIN)
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Доступ запрещен
+        '400':
+          description: Неверные данные запроса
+
+  /api/v1/users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Получить информацию о пользователе
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Информация о пользователе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Пользователь не найден
+
+    put:
+      tags:
+        - Users
+      summary: Обновить информацию о пользователе
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Информация обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Пользователь не найден
+
+    delete:
+      tags:
+        - Users
+      summary: Удалить пользователя (только для ADMIN)
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пользователь удален
+        '403':
+          description: Доступ запрещен
+        '404':
+          description: Пользователь не найден
+
+  # Аналогично добавьте пути для /api/v1/cards и остальных endpoints
+  # Полная документация будет содержать все endpoints из ваших контроллеров
+
+tags:
+  - name: Authentication
+    description: Операции аутентификации и регистрации
+  - name: Users
+    description: Управление пользователями
+  - name: Cards
+    description: Управление банковскими картами
+  - name: Transfers
+    description: Операции перевода средств

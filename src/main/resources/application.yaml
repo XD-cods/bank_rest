@@ -1,6 +1,11 @@
 server:
   port: ${APPLICATION_PORT:8080}
 
+app:
+  jwt:
+    secret: ${JWT_SECRET_KEY:your-super-secret-jwt-key-at-least-256-bits-long}
+    expiration: ${JWT_EXPIRATION_TIME_MILLISECOND:86400000}
+
 spring:
   application:
     name: bank_rest

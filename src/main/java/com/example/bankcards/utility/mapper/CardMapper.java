@@ -14,10 +14,10 @@ import org.mapstruct.MappingConstants;
 )
 public interface CardMapper {
 
+    @Mapping(target = "cardNumberHash", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "owner", ignore = true)
     @Mapping(target = "maskedCardNumber", ignore = true)
-    @Mapping(target = "encryptedCardNumber", ignore = true)
     @Mapping(target = "cardStatus", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)

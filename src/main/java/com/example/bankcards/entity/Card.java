@@ -41,8 +41,8 @@ public class Card {
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "encrypted_card_number", nullable = false, updatable = false, unique = true)
-    private String encryptedCardNumber;
+    @Column(name = "card_number_hash", nullable = false, updatable = false, unique = true)
+    private String cardNumberHash;
 
     @Column(name = "masked_card_number", nullable = false, updatable = false, length = 19)
     private String maskedCardNumber;

@@ -12,7 +12,7 @@ import org.hibernate.validator.constraints.UUID;
 
 public record CardRequest(
 
-    @Size(message = "{card.number.size.invalid}", min = 16, max = 19)
+    @Size(message = "{card.number.size.invalid}", min = 19, max = 19)
     @Pattern(message = "{card.number.pattern.invalid}", regexp = RegExConstant.cardNumberRegEx)
     @NotBlank(message = "{card.number.blank}")
     String cardNumber,
@@ -29,4 +29,10 @@ public record CardRequest(
     BigDecimal balance
 
 ) {
+    @Override
+    public String toString() {
+        return "CardRequest{" +
+            "ownerId='" + ownerId + '\'' +
+            '}';
+    }
 }

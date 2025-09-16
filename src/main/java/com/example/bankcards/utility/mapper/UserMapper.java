@@ -14,17 +14,15 @@ import org.mapstruct.MappingConstants;
 )
 public interface UserMapper {
 
-    @Mapping(target = "encryptedPassword", ignore = true)
-    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "isActive", ignore = true)
-    @Mapping(target = "cards", ignore = true)
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "encryptedPassword", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "cards", ignore = true)
     User toEntity(UserRequest user);
 
-    @Mapping(target = "isActive", ignore = true)
-    @Mapping(target = "cardIds", ignore = true)
     UserResponse toResponse(User user);
 
 }

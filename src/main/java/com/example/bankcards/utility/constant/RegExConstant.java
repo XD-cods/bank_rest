@@ -8,6 +8,7 @@ public final class RegExConstant {
 
     public static final String cardNumberRegEx = "^(\\d{4}\\s){3}\\d{4}$";
 
-    public static final String userPasswordRegEx = "^(?=.*[A-Za-z])(?=.*\\\\d).*$";
+    public static final String userPasswordRegEx =
+        "(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z!@#$%^&*]{6,}";
 
 }
