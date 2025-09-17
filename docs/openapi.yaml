@@ -1,0 +1,966 @@
+openapi: 3.0.0
+info:
+  title: Bank Cards API
+  description: |
+    API для управления банковскими картами и пользователями.
+    Предоставляет функционал для регистрации, аутентификации, управления картами,
+    перевода средств между картами и администрирования пользователей.
+    
+    ## Аутентификация
+    Для доступа к защищенным endpoints требуется JWT-токен, полученный при логине.
+    Добавьте токен в заголовок запроса: `Authorization: Bearer <your_token>`
+    
+    ## Роли пользователей
+    - **ROLE_USER** - обычный пользователь (может управлять своими картами)
+    - **ROLE_ADMIN** - администратор (полный доступ ко всем операциям)
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Development server
+
+tags:
+  - name: Auth
+    description: Аутентификация и регистрация
+  - name: Users
+    description: Управление пользователями
+  - name: Cards
+    description: Управление банковскими картами
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Bad Request
+        errorDescription:
+          type: string
+          example: Invalid input parameters
+        statusCode:
+          type: integer
+          example: 400
+        path:
+          type: string
+          example: /api/v1/cards
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-12-01T10:30:00"
+
+    AuthRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: "Password123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          example: "SecurePassword123!"
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+
+    PageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { }
+        currentPage:
+          type: integer
+          example: 0
+        totalElements:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 10
+
+    CardRequest:
+      type: object
+      required:
+        - cardNumber
+        - expiryDate
+        - ownerId
+        - balance
+      properties:
+        cardNumber:
+          type: string
+          description: Номер карты в формате XXXX-XXXX-XXXX-XXXX
+          example: "1234-5678-9012-3456"
+        expiryDate:
+          type: string
+          format: year-month
+          example: "2025-12"
+        ownerId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        balance:
+          type: number
+          format: decimal
+          minimum: 0
+          example: 1000.50
+
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        maskedCardNumber:
+          type: string
+          example: "**** **** **** 3456"
+        expiryDate:
+          type: string
+          format: year-month
+          example: "2025-12"
+        ownerId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        cardStatus:
+          type: string
+          enum: [ ACTIVE, BLOCKED ]
+          example: ACTIVE
+        balance:
+          type: number
+          format: decimal
+          example: 1000.50
+
+    CardBalanceResponse:
+      type: object
+      properties:
+        balance:
+          type: number
+          format: decimal
+          example: 1000.50
+
+    TransferRequest:
+      type: object
+      required:
+        - sourceCardId
+        - targetCardId
+        - amount
+      properties:
+        sourceCardId:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        targetCardId:
+          type: string
+          format: uuid
+          example: "223e4567-e89b-12d3-a456-426614174000"
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.1
+          example: 100.00
+        description:
+          type: string
+          example: "Transfer for services"
+
+security:
+  - BearerAuth: [ ]
+
+paths:
+  /public/register:
+    post:
+      tags: [ Auth ]
+      summary: Регистрация нового пользователя
+      description: |
+        Создает нового пользователя с ролью ROLE_USER.
+        Пароль хешируется перед сохранением в базу данных.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+            examples:
+              user-registration:
+                summary: Пример регистрации пользователя
+                value:
+                  firstName: "John"
+                  lastName: "Doe"
+                  email: "john.doe@example.com"
+                  password: "SecurePassword123!"
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /public/login:
+    post:
+      tags: [ Auth ]
+      summary: Аутентификация пользователя
+      description: |
+        Аутентифицирует пользователя и возвращает JWT-токен для доступа к защищенным endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+            examples:
+              user-login:
+                summary: Пример входа пользователя
+                value:
+                  email: "john.doe@example.com"
+                  password: "SecurePassword123!"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users:
+    post:
+      tags: [ Users ]
+      summary: Создать нового пользователя (только ADMIN)
+      description: |
+        Создает нового пользователя. Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '201':
+          description: Пользователь успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [ Users ]
+      summary: Получить список всех пользователей (только ADMIN)
+      description: |
+        Возвращает paginated список всех пользователей в системе.
+        Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: currentPage
+          in: query
+          description: Номер страницы (начинается с 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Количество элементов на странице (1-100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Поисковый запрос
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              examples:
+                users-page:
+                  summary: Пример страницы пользователей
+                  value:
+                    content:
+                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                        firstName: "John"
+                        lastName: "Doe"
+                        email: "john.doe@example.com"
+                      - id: "223e4567-e89b-12d3-a456-426614174000"
+                        firstName: "Jane"
+                        lastName: "Smith"
+                        email: "jane.smith@example.com"
+                    currentPage: 0
+                    totalElements: 2
+                    totalPages: 1
+
+  /users/me:
+    get:
+      tags: [ Users ]
+      summary: Получить детали своего аккаунта
+      description: |
+        Пользователь получает свои данные.
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: Детали пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}:
+    get:
+      tags: [ Users ]
+      summary: Получить детали пользователя (только ADMIN)
+      description: |
+        Возвращает детальную информацию о пользователе.
+        Пользователь может получить только свои данные, администратор - любые.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Детали пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [ Users ]
+      summary: Обновить данные пользователя
+      description: |
+        Обновляет данные пользователя. Пользователь может обновить только свои данные,
+        администратор - любые.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        '200':
+          description: Данные пользователя обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [ Users ]
+      summary: Удалить пользователя (только ADMIN)
+      description: |
+        Удаляет пользователя из системы. Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пользователь успешно удален
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/activate:
+    patch:
+      tags: [ Users ]
+      summary: Активировать пользователя (только ADMIN)
+      description: |
+        Активирует деактивированного пользователя. Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пользователь активирован
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/deactivate:
+    patch:
+      tags: [ Users ]
+      summary: Деактивировать пользователя
+      description: |
+        Деактивирует пользователя. Пользователь может деактивировать только себя,
+        администратор - любого пользователя.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пользователь деактивирован
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards:
+    post:
+      tags: [ Cards ]
+      summary: Создать новую карту (только ADMIN)
+      description: |
+        Создает новую банковскую карту для указанного пользователя.
+        Номер карты хешируется перед сохранением в базу данных.
+        Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardRequest'
+            examples:
+              card-creation:
+                summary: Пример создания карты
+                value:
+                  cardNumber: "1234-5678-9012-3456"
+                  expiryDate: "2025-12"
+                  ownerId: "123e4567-e89b-12d3-a456-426614174000"
+                  balance: 1000.00
+      responses:
+        '201':
+          description: Карта успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Карта с таким номером уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [ Cards ]
+      summary: Получить список всех карт (только ADMIN)
+      description: |
+        Возвращает paginated список всех карт в системе.
+        Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: currentPage
+          in: query
+          description: Номер страницы (начинается с 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Количество элементов на странице (1-100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Поисковый запрос
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список карт
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              examples:
+                cards-page:
+                  summary: Пример страницы карт
+                  value:
+                    content:
+                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                        maskedCardNumber: "**** **** **** 3456"
+                        expiryDate: "2025-12"
+                        ownerId: "123e4567-e89b-12d3-a456-426614174000"
+                        cardStatus: "ACTIVE"
+                        balance: 1000.50
+                    currentPage: 0
+                    totalElements: 1
+                    totalPages: 1
+
+  /cards/{cardId}:
+    get:
+      tags: [ Cards ]
+      summary: Получить детали карты
+      description: |
+        Возвращает детальную информацию о карте.
+        Пользователь может получить только данные своих карт, администратор - любые.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Детали карты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [ Cards ]
+      summary: Обновить данные карты (только ADMIN)
+      description: |
+        Обновляет данные карты (срок действия, баланс). Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardRequest'
+      responses:
+        '200':
+          description: Данные карты обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '400':
+          description: Невалидные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [ Cards ]
+      summary: Удалить карту (только ADMIN)
+      description: |
+        Удаляет карту из системы. Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Карта успешно удалена
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards/{cardId}/balance:
+    get:
+      tags: [ Cards ]
+      summary: Получить баланс карты
+      description: |
+        Возвращает текущий баланс карты.
+        Пользователь может получить баланс только своих карт, администратор - любых.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Баланс карты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardBalanceResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards/user/me:
+    get:
+      tags: [ Cards ]
+      summary: Получить карты пользователя
+      description: |
+        Возвращает paginated список карт текущего пользователя.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: currentPage
+          in: query
+          description: Номер страницы (начинается с 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Количество элементов на странице (1-100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Поисковый запрос
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список карт пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+
+  /cards/user/{userId}:
+    get:
+      tags: [ Cards ]
+      summary: Получить карты пользователя
+      description: |
+        Возвращает paginated список карт указанного пользователя.
+        Пользователь может получить только свои карты, администратор - любые.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID пользователя
+          schema:
+            type: string
+            format: uuid
+        - name: currentPage
+          in: query
+          description: Номер страницы (начинается с 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Количество элементов на странице (1-100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Поисковый запрос
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Список карт пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+
+  /cards/{cardId}/block:
+    patch:
+      tags: [ Cards ]
+      summary: Заблокировать карту
+      description: |
+        Блокирует карту. Пользователь может заблокировать только свои карты,
+        администратор - любые карты.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Карта заблокирована
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards/{cardId}/unblock:
+    patch:
+      tags: [ Cards ]
+      summary: Разблокировать карту (только ADMIN)
+      description: |
+        Разблокирует заблокированную карту. Доступно только администраторам.
+      security:
+        - BearerAuth: [ ]
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          description: UUID карты
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Карта разблокирована
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cards/transfer:
+    patch:
+      tags: [ Cards ]
+      summary: Перевод средств между картами
+      description: |
+        Выполняет перевод средств с одной карты на другую.
+        Пользователь может переводить только со своих карт.
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+            examples:
+              money-transfer:
+                summary: Пример перевода средств
+                value:
+                  sourceCardId: "123e4567-e89b-12d3-a456-426614174000"
+                  targetCardId: "223e4567-e89b-12d3-a456-426614174000"
+                  amount: 100.00
+                  description: "Payment for services"
+      responses:
+        '204':
+          description: Перевод выполнен успешно
+        '400':
+          description: Невалидные данные или недостаточно средств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
