@@ -7,6 +7,9 @@ app:
     expiration: ${JWT_EXPIRATION_TIME_MILLISECOND:86400000}
 
 spring:
+  web:
+    resources:
+      static-locations: classpath:/,classpath:/static/,classpath:/public/,file:docs/
   application:
     name: bank_rest
   datasource:
@@ -22,3 +25,11 @@ spring:
 
   liquibase:
     change-log: classpath:/db/migration/db.changelog-master.xml
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    config-url: /api-docs/swagger-config
+    url: /openapi.yaml

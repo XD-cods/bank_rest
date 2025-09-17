@@ -1,6 +1,7 @@
 package com.example.bankcards.repository;
 
 import com.example.bankcards.entity.Card;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,8 @@ public interface CardRepository extends CrudRepository<Card, Integer> {
     Page<Card> findAll(Pageable pageable);
 
     boolean existsByCardNumberHash(String cardNumberHash);
+
+    List<Card> findByQuickHash(String quickHash);
 
 }
 

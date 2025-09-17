@@ -93,8 +93,8 @@ public class UserServiceImpl implements UserService {
 
         userValidator.validateUserForUpdate(user);
 
-        if (!user.getEmail().equals(updateUserRequest.email()) &&
-            userRepository.existsByEmail(updateUserRequest.email())) {
+        if (!user.getEmail().equals(updateUserRequest.email())
+            && userRepository.existsByEmail(updateUserRequest.email())) {
             log.error("updateUserDetails. Email already exists: {}", updateUserRequest.email());
             throw new UserAlreadyExistsByEmailException(
                 ErrorMessagesConstant.USER_ALREADY_EXISTS_BY_EMAIL_MESSAGE.formatted(updateUserRequest.email()));

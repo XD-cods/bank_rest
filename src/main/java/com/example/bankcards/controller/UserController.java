@@ -6,6 +6,7 @@ import com.example.bankcards.dto.response.UserResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.security.Principal;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,5 +34,7 @@ public interface UserController {
     void activateUser(@PathVariable UUID userId);
 
     void deleteUser(@PathVariable UUID userId);
+
+    UserResponse getCurrentUserDetails(Principal principal);
 
 }

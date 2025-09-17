@@ -8,6 +8,7 @@ import com.example.bankcards.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,8 +35,15 @@ public class UserControllerImpl implements UserController {
     private final UserService userService;
 
     @GetMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse getUserDetails(@PathVariable UUID userId) {
+        return userService.getUserDetails(userId);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public UserResponse getCurrentUserDetails(Principal principal) {
+        UUID userId = UUID.fromString(principal.getName());
         return userService.getUserDetails(userId);
     }
 

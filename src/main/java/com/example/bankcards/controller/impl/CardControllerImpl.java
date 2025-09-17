@@ -10,6 +10,7 @@ import com.example.bankcards.service.CardService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,6 +58,19 @@ public class CardControllerImpl implements CardController {
         @RequestParam(required = false, defaultValue = "10") @Min(1) @Max(100) Integer limit,
         @RequestParam(required = false) String search
     ) {
+        PageResponse<CardResponse> userCards = cardService.getUserCards(userId, currentPage, limit, search);
+        return userCards;
+    }
+
+    @GetMapping("/user/me")
+    @PreAuthorize("isAuthenticated()")
+    public PageResponse<CardResponse> getCurrentUserCards(
+        @RequestParam(required = false, defaultValue = "0") @Min(0) Integer currentPage,
+        @RequestParam(required = false, defaultValue = "10") @Min(1) @Max(100) Integer limit,
+        @RequestParam(required = false) String search,
+        Principal principal
+    ) {
+        UUID userId = UUID.fromString(principal.getName());
         PageResponse<CardResponse> userCards = cardService.getUserCards(userId, currentPage, limit, search);
         return userCards;
     }

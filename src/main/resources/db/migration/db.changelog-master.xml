@@ -8,5 +8,6 @@
     <include file="V1/V1-initial-schema.xml" relativeToChangelogFile="true"/>
     <include file="/db/migration/V1/V1-update-card-number-column.xml"/>
     <include file="/db/migration/V1/V1-update-masked-card-number.xml"/>
+    <include file="/db/migration/V1/V1-add-quick-hash-column.xml"/>
 
 </databaseChangeLog>

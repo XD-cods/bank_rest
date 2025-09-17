@@ -142,8 +142,8 @@ components:
       properties:
         cardNumber:
           type: string
-          description: Номер карты в формате XXXX-XXXX-XXXX-XXXX
-          example: "1234-5678-9012-3456"
+          description: Номер карты в формате XXXX XXXX XXXX XXXX
+          example: "1234 5678 9012 3456"
         expiryDate:
           type: string
           format: year-month

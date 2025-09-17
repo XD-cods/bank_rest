@@ -106,17 +106,21 @@ public class CardServiceImpl implements CardService {
                 return new UserNotFoundById(ErrorMessagesConstant.USER_NOT_FOUND_BY_ID_MESSAGE.formatted(ownerId));
             });
 
-        String cardNumberHash = cardHashService.hashCardNumber(cardRequest.cardNumber());
-        if (cardRepository.existsByCardNumberHash(cardNumberHash)) {
+        String cardNumber = cardRequest.cardNumber();
+
+        if (!cardHashService.isCardNumberUnique(cardNumber)) {
             log.warn("createNewCard. Card already exists for user: {}", ownerId);
             throw new CardAlreadyExistsByCardNumberException(
                 ErrorMessagesConstant.CARD_ALREADY_EXISTS_BY_CARD_NUMBER);
         }
-        String maskedCardNumber = maskCardNumber(cardRequest.cardNumber());
+        String maskedCardNumber = maskCardNumber(cardNumber);
+        String cardNumberHash = cardHashService.hashCardNumber(cardNumber);
+        String quickHash = cardHashService.getQuickHash(cardNumber);
 
         Card card = Card.builder()
             .cardNumberHash(cardNumberHash)
             .maskedCardNumber(maskedCardNumber)
+            .quickHash(quickHash)
             .expiryDate(cardRequest.expiryDate())
             .owner(owner)
             .balance(cardRequest.balance())
@@ -231,11 +235,18 @@ public class CardServiceImpl implements CardService {
             return cardNumber;
         }
 
-        String firstFour = "*".repeat(cardNumber.length() - 4);
-        String lastFour = cardNumber.substring(cardNumber.length() - 4);
-        String middle = "*".repeat(cardNumber.length() - 8);
+        String cleanNumber = cardNumber.replaceAll("[^0-9]", "");
 
-        return firstFour + " " + middle + " " + lastFour;
+        if (cleanNumber.length() < 12) {
+            return cardNumber;
+        }
+
+        String firstFour = cleanNumber.substring(0, 4);
+        String lastFour = cleanNumber.substring(cleanNumber.length() - 4);
+
+        String maskedMiddle = "**** ****";
+
+        return firstFour + " " + maskedMiddle + " " + lastFour;
     }
 
 }
